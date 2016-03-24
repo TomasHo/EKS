@@ -1,8 +1,12 @@
+import json
 import re
 from bs4 import BeautifulSoup
 from urllib import response, request
 from pprint import pprint as pp
+from configparser import ConfigParser
 
+config = ConfigParser()
+config.read("settings.ini")
 
 def scrape(url_id):
 
@@ -34,10 +38,10 @@ def scrape(url_id):
                "termin ponuky": zak_lehota_ponuky
                }
     #
-    with open("text.txt","a+", encoding="utf-8") as f:
-        print(dataset, file=f)
+    with open("text.json","a+", encoding="utf-8") as f:
+        json.dump(dataset, f, sort_keys=True, indent=1)
 
-for x in range(40059,49500):
+for x in range(49505,49511):
     try:
         scrape(x)
     except AttributeError:
