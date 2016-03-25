@@ -42,7 +42,6 @@ def scrape(url_id):
     CPV = check_soup(id="cpvData")
     zak_CPV = re.findall("kod\" \:\"(\d{8}-\d+)",str(CPV))
     CPV_2digs = re.findall("kod\" \:\"(\d{2})",str(CPV))
-    print(CPV_2digs)
     dataset = {url_id:{
                "Show": False,
                "details": {
@@ -69,13 +68,15 @@ def scrape(url_id):
 
 for x in range(max(file_list)+1, max(file_list)+10):
     try:
+        print("Extracting data for ID: {}".format(x))
         scrape(x)
         sleep(10)
-        file_list.append(x)
+        file_list.insert(0, x)
     except AttributeError:
+        print("Funkcia pre ID {} zlyhala".format(x))
         pass
         sleep(10)
-    with open("list.json","w+") as y:
+    with open("list.json", "w+") as y:
         json.dump(file_list, y)
 # soup = BeautifulSoup(open("https://portal.eks.sk/SpravaZakaziek/Zakazky/Detail/49503"))
 
