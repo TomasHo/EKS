@@ -1,11 +1,14 @@
 import json
 import re
-import os
+import os, sys, smtp
 
+from datetime import datetime
 from bs4 import BeautifulSoup
 from urllib import request
 from configparser import ConfigParser
 from time import sleep
+
+assert sys.version_info.major >= 3
 
 config = ConfigParser()
 config.read("settings.ini")
@@ -14,7 +17,7 @@ try:
     with open('list.json') as file:
         file_list = json.load(file)
 except IOError:
-    for (dirpath, dirnames, filenames) in os.walk('/home/th/projects/EKS/Data'):
+    for (dirpath, dirnames, filenames) in os.walk('Data'):
         file_list = []
         file_list.extend(filenames)
         break
@@ -63,16 +66,29 @@ def scrape(url_id):
             json.dump(dataset, f, sort_keys=True, indent=0)
 
 
-for x in range(max(file_list)+1, max(file_list)+10):
-    try:
-        print("Extracting data for ID: {}".format(x))
-        scrape(x)
+def run():
+    log_file = open('eks.log', 'a+')
+    for x in range(max(file_list)-2, max(file_list)+2):
+        try:
+            log_file.write(str(datetime.now()) + ' : ' + "Extracting data for ID: {}\n".format(x))
+            if x not in file_list:
+                scrape(x)
+                file_list.insert(0, x)
+                log_file.write(str(datetime.now()) + ' : ' + "Inserting data to list.json: {}\n".format(x))
+            else:
+                log_file.write(str(datetime.now()) + ' : ' + "{} uz spracovane\n".format(x))
+        except AttributeError:
+            log_file.write(str(datetime.now()) + ' : ' + "Funkcia pre ID {} zlyhala\n".format(x))
+            pass
+        with open("list.json", "w+") as y:
+            json.dump(file_list, y)
         sleep(10)
-        file_list.insert(0, x)
-    except AttributeError:
-        print("Funkcia pre ID {} zlyhala".format(x))
-        pass
-        sleep(10)
-    with open("list.json", "w+") as y:
-        json.dump(file_list, y)
+    while os.listdir('Data'):
+        #sleep(3)
+        smtp.send_mail()
+        item = min(os.listdir('Data'))
+        os.rename('Data/'+item, 'Data_processed/'+item)
+        log_file.write(str(datetime.now()) + ' : '+item+' processed\n')
 
+    smtp.smtpserver.close()
+    log_file.close()
