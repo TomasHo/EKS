@@ -2,16 +2,21 @@ import json
 import re
 import os, sys
 
-from EKS import smtp
+os.chdir('/home/pi/Documents/PythonProjects/')
+
+import smtp
 from datetime import datetime
 from bs4 import BeautifulSoup
 from urllib import request
 from configparser import ConfigParser
 from time import sleep
 
+
 assert sys.version_info.major >= 3
 if not os.path.isdir('EKS/Data'): os.mkdir('EKS/Data')
 if not os.path.isdir('EKS/Data_processed'): os.mkdir('EKS/Data_processed')
+
+if os.stat('EKS/eks.log').st_size > 2000000: os.rename('EKS/eks.log', 'EKS/eks.old')
 
 config = ConfigParser()
 config.read("EKS/settings.ini")
@@ -70,28 +75,30 @@ def scrape(url_id):
 
 
 def run():
-    log_file = open('EKS/eks.log', 'a+')
-    for x in range(max(file_list)-2, max(file_list)+2):
-        try:
-            log_file.write(str(datetime.now()) + ' : ' + "Extracting data for ID: {}\n".format(x))
-            if x not in file_list:
-                scrape(x)
-                file_list.insert(0, x)
-                log_file.write(str(datetime.now()) + ' : ' + "Inserting data to list.json: {}\n".format(x))
-            else:
-                log_file.write(str(datetime.now()) + ' : ' + "{} uz spracovane\n".format(x))
-        except AttributeError:
-            log_file.write(str(datetime.now()) + ' : ' + "Funkcia pre ID {} zlyhala\n".format(x))
-            pass
-        with open("EKS/list.json", "w+") as y:
-            json.dump(file_list, y)
-        sleep(10)
-    while os.listdir('EKS/Data'):
-        #sleep(3)
-        smtp.send_mail()
-        item = min(os.listdir('EKS/Data'))
-        os.rename('EKS/Data/'+item, 'EKS/Data_processed/'+item)
-        log_file.write(str(datetime.now()) + ' : '+item+' processed\n')
+    with open('EKS/eks.log', 'a+') as log_file:
+        for x in range(max(file_list)-10, max(file_list)+20):
+            try:
+                log_file.write(str(datetime.now()) + ' : ' + "Extracting data for ID: {}\n".format(x))
+                if x not in file_list:
+                    scrape(x)
+                    file_list.insert(0, x)
+                    log_file.write(str(datetime.now()) + ' : ' + "Inserting data to list.json: {}\n".format(x))
+                else:
+                    log_file.write(str(datetime.now()) + ' : ' + "{} uz spracovane\n".format(x))
+            except AttributeError:
+                log_file.write(str(datetime.now()) + ' : ' + "Funkcia pre ID {} zlyhala\n".format(x))
+                pass
+            with open("EKS/list.json", "w+") as y:
+                json.dump(file_list, y)
+            sleep(20)
+        while len(os.listdir('EKS/Data'))>0:
+            #sleep(3)
+            smtp.send_mail()
+            item = min(os.listdir('EKS/Data'))
+            os.rename('EKS/Data/'+item, 'EKS/Data_processed/'+item)
+            log_file.write(str(datetime.now()) + ' : '+item+' processed\n')
 
-    smtp.smtpserver.close()
-    log_file.close()
+        smtp.smtpserver.close()
+
+if __name__ == '__main__':
+    run()

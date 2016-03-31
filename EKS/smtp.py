@@ -9,8 +9,10 @@ from configparser import ConfigParser
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+os.chdir('/home/pi/Documents/PythonProjects/')
+
 config = ConfigParser()
-config.read("settings.ini")
+config.read("EKS/settings.ini")
 
 # Open a plain text file for reading.  For this example, assume that
 # the text file contains only ASCII characters.
@@ -46,7 +48,7 @@ def send_mail():
 
     msg = MIMEMultipart('alternative')
     msg['Subject'] = read_data()[0] + ', ponuka do: ' + read_data()[4][:10]
-    msg['From'] = 'EKS Portal'
+    msg['From'] = login_user
     msg['To'] = to[0]
 
     text = str(read_data())
