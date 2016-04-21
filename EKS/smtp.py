@@ -1,7 +1,4 @@
-__author__ = 'TH'
-
-# Import smtplib for the actual sending function
-import smtplib, json, os
+import smtplib, json, os, logging
 from datetime import datetime
 from configparser import ConfigParser
 
@@ -13,6 +10,7 @@ os.chdir('/home/pi/Documents/PythonProjects/')
 
 config = ConfigParser()
 config.read("EKS/settings.ini")
+logging.basicConfig(filename='EKS/eks.log', level=logging.DEBUG)
 
 # Open a plain text file for reading.  For this example, assume that
 # the text file contains only ASCII characters.
@@ -36,16 +34,16 @@ def read_data():
 
 # Create the body of the message (a plain-text and an HTML version).
 
-to = config['DEFAULT']['recipients'].split(',')
-
-login_user = config['DEFAULT']['login_user']
-login_user_pwd = config['DEFAULT']['login_user_pwd']
-smtpserver = smtplib.SMTP(config['DEFAULT']['smtp_server'])
-
 
 def send_mail():
-    smtpserver.login(login_user, login_user_pwd)
+    to = config['DEFAULT']['recipients'].split(',')
+    login_user = config['DEFAULT']['login_user']
+    login_user_pwd = config['DEFAULT']['login_user_pwd']
+    smtpserver = smtplib.SMTP(config['DEFAULT']['smtp_server'])
+    logging.info(str(datetime.now()) + '  {} {} {} : smtp. login data\n'.format(login_user, login_user_pwd, smtpserver))
 
+    smtpserver.login(login_user, login_user_pwd)
+    logging.info(str(datetime.now()) + ' : smtp. login successful\n')
     msg = MIMEMultipart('alternative')
     msg['Subject'] = read_data()[0] + ', ponuka do: ' + read_data()[4][:10]
     msg['From'] = login_user
@@ -89,8 +87,7 @@ def send_mail():
 
     smtpserver.sendmail(login_user, to, msg.as_string())
     item = min(os.listdir('EKS/Data'))
-    log_file = open('EKS/eks.log', 'a')
-    log_file.write(str(datetime.now()) + ' : ' + item + ' sent to:'+str(to)+'\n')
-    log_file.close()
-    #smtpserver.close()
+    logging.info(str(datetime.now()) + ' : ' + item + ' sent to:'+str(to)+'\n')
+    smtpserver.quit()
+    logging.info(str(datetime.now()) + ' : connection to the server closed\n')
 
